@@ -1,0 +1,29 @@
+#!/bin/bash -eu
+
+BUFFER_FILE=$(dirname $0)/../buffer/ec2.json
+NAME=$1
+
+aws ec2 describe-instances > $BUFFER_FILE
+
+jq "
+  .Reservations[].Instances[] |
+  select(.Tags != null) |
+  {
+    Tag: .Tags[],
+    State: .State.Name,
+    PublicIp: .PublicIpAddress,
+    PrivateIp: .PrivateIpAddress,
+    KeyName: .KeyName,
+    InstanceId: .InstanceId
+  } |
+  select(.Tag.Key == \"Name\") |
+  select(.Tag.Value | test(\"$NAME\")) |
+  {
+    Name: .Tag.Value,
+    State: .State,
+    PublicIp: .PublicIp,
+    PrivateIp: .PrivateIp,
+    KeyName: .KeyName,
+    InstanceId: .InstanceId
+  }
+" $BUFFER_FILE

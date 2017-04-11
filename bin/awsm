@@ -1,6 +1,7 @@
 #!/bin/bash -eu
 
 BUFFER_EC2_FILE=$(dirname $0)/../buffer/ec2.json
+TARGET_EC2_FILE=$(dirname $0)/../buffer/target_ec2.json
 
 ls() {
   NAME=$1
@@ -28,7 +29,9 @@ ls() {
       KeyName: .KeyName,
       InstanceId: .InstanceId
     }
-  " $BUFFER_EC2_FILE
+  " $BUFFER_EC2_FILE > $TARGET_EC2_FILE
+
+  jq . $TARGET_EC2_FILE
 }
 
 case $1 in

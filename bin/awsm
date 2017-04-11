@@ -1,29 +1,36 @@
 #!/bin/bash -eu
 
-BUFFER_FILE=$(dirname $0)/../buffer/ec2.json
-NAME=$1
+BUFFER_EC2_FILE=$(dirname $0)/../buffer/ec2.json
 
-aws ec2 describe-instances > $BUFFER_FILE
+ls() {
+  NAME=$1
 
-jq "
-  .Reservations[].Instances[] |
-  select(.Tags != null) |
-  {
-    Tag: .Tags[],
-    State: .State.Name,
-    PublicIp: .PublicIpAddress,
-    PrivateIp: .PrivateIpAddress,
-    KeyName: .KeyName,
-    InstanceId: .InstanceId
-  } |
-  select(.Tag.Key == \"Name\") |
-  select(.Tag.Value | test(\"$NAME\")) |
-  {
-    Name: .Tag.Value,
-    State: .State,
-    PublicIp: .PublicIp,
-    PrivateIp: .PrivateIp,
-    KeyName: .KeyName,
-    InstanceId: .InstanceId
-  }
-" $BUFFER_FILE
+  aws ec2 describe-instances > $BUFFER_EC2_FILE
+
+  jq "
+    .Reservations[].Instances[] |
+    select(.Tags != null) |
+    {
+      Tag: .Tags[],
+      State: .State.Name,
+      PublicIp: .PublicIpAddress,
+      PrivateIp: .PrivateIpAddress,
+      KeyName: .KeyName,
+      InstanceId: .InstanceId
+    } |
+    select(.Tag.Key == \"Name\") |
+    select(.Tag.Value | test(\"$NAME\")) |
+    {
+      Name: .Tag.Value,
+      State: .State,
+      PublicIp: .PublicIp,
+      PrivateIp: .PrivateIp,
+      KeyName: .KeyName,
+      InstanceId: .InstanceId
+    }
+  " $BUFFER_EC2_FILE
+}
+
+case $1 in
+  "ls" ) ls $2
+esac

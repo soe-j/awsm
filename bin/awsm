@@ -2,11 +2,33 @@
 
 BUFFER_EC2_FILE=$(dirname $0)/../buffer/ec2.json
 TARGET_EC2_FILE=$(dirname $0)/../buffer/target_ec2.json
+BUFFER_PERIOD_HOUR=6
+
+check_buffer() {
+  if [ ! -f $BUFFER_EC2_FILE ]; then
+    echo 'No Buffer'
+    return 1
+  fi
+
+  echo "Buffer Time: $(stat -f %SB $BUFFER_EC2_FILE)"
+
+  if [ $(( $(date +%s) - $(stat -f %B $BUFFER_EC2_FILE) )) -gt $((60 * 60 * $BUFFER_PERIOD_HOUR)) ]; then
+    echo 'Buffer has expired!'
+    return 2
+  fi
+
+  return 0
+}
+
+load() {
+  echo 'loading...'
+  aws ec2 describe-instances > $BUFFER_EC2_FILE
+}
 
 ls() {
   NAME=$1
 
-  aws ec2 describe-instances > $BUFFER_EC2_FILE
+  check_buffer || load
 
   jq "
     .Reservations[].Instances[] |
